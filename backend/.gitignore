@@ -2,7 +2,6 @@ venv/
 __pycache__/
 *.pyc
 .env
-community.db
 .venv/
 .pytest_cache/
 .DS_Store
@@ -13,3 +12,5 @@ build/
 *.log
 node_modules/
 /.mypy_cache
+*.db-journal
+*-journal
