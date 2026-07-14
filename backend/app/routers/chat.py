@@ -1,10 +1,20 @@
-from fastapi import APIRouter
+from typing import Annotated
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.schemas.chat import ChatRequest, ChatResponse
+
+router = APIRouter(prefix="/api", tags=["chat"])
 
 
-@router.post("")
-def chat_endpoint(payload: dict):
-    question = payload.get("chat_question") if isinstance(payload, dict) else None
-    # Placeholder response until chat service implemented
-    return {"chat_answer": f"Received: {question}"}
+DbSession = Annotated[Session, Depends(get_db)]
+
+
+@router.post("/chat", response_model=ChatResponse, summary="지역정보 챗봇")
+def chat_endpoint(chat_data: ChatRequest, db: DbSession):
+    # Placeholder: team3 should implement chat_service.generate_answer
+    # This uses DB session so chat service can query posts.
+    question = chat_data.question
+    return ChatResponse(answer=f"임시 응답: {question}")

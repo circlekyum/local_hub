@@ -22,4 +22,7 @@ __all__ = [
 	"ErrorResponse",
 	"ValidationErrorItem",
 	"ValidationErrorResponse",
+	"ChatRequest",
+	"ChatResponse",
+	"PlaceResponse",
 ]
