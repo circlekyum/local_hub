@@ -1,6 +1,21 @@
 *.pdf
 *.xlsx
 .env
-venv
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env.*
+.env.local
+*.db
+.pytest_cache/
+.mypy_cache/
+.vscode/
+.idea/
+build/
+*.log
+Thumbs.db
 *.json
+
+
 
