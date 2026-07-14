@@ -1,5 +1,6 @@
 *.pdf
 *.xlsx
 .env
+venv
 *.json
 
