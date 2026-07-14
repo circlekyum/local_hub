@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import create_tables, get_db
 from app.routers import posts, places, chat
+from app.models import Post  # noqa: F401
 
 
 @asynccontextmanager
