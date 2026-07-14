@@ -1,19 +1,42 @@
+from collections.abc import Generator
+from pathlib import Path
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from .config import settings
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
-)
+from app.config import settings
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Ensure data directory exists when using a relative SQLite path
+if settings.database_url.startswith("sqlite:///"):
+    # Extract path after 'sqlite:///' (keeps relative paths like ./data/community.db)
+    db_path = settings.database_url[len("sqlite:///") :]
+    path = Path(db_path)
+    # Create parent directories for the DB file when path is relative or absolute
+    Path(path.parent).mkdir(parents=True, exist_ok=True)
 
-Base = declarative_base()
+connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+
+engine = create_engine(settings.database_url, connect_args=connect_args)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
-def init_db():
-    # Import models so they are registered on the metadata
-    import app.models.post  # noqa: F401
+class Base(DeclarativeBase):
+    pass
 
+
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def create_tables() -> None:
+    # Import models to ensure they are registered with Base metadata
+    try:
+        import app.models.post  # noqa: F401
+    except Exception:
+        pass
     Base.metadata.create_all(bind=engine)
