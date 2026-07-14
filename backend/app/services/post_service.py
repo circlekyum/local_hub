@@ -36,3 +36,33 @@ def create_post(db: Session, post_data: PostCreate) -> Post:
         raise
 
     return post
+
+
+def verify_password(post: Post, password: str) -> bool:
+    return post.password == password
+
+
+def update_post(db: Session, post: Post, post_data) -> Post:
+    # post_data is expected to have post_title and post_contents (contract)
+    post.title = post_data.post_title
+    post.content = post_data.post_contents
+
+    try:
+        db.commit()
+        db.refresh(post)
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+    return post
+
+
+def delete_post(db: Session, post: Post) -> None:
+    try:
+        db.delete(post)
+        db.commit()
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise

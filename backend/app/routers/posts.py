@@ -34,13 +34,7 @@ def get_post(post_id: int, db: DbSession):
     return p
 
 
-@router.post("", status_code=201)
-@router.post(
-    "",
-    response_model=PostResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="게시글 작성",
-)
+@router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED, summary="게시글 작성")
 def create_post(post_data: PostCreate, db: DbSession):
     try:
         post = post_service.create_post(db, post_data)
@@ -49,28 +43,38 @@ def create_post(post_data: PostCreate, db: DbSession):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="게시글 저장 중 오류가 발생했습니다.")
 
 
-@router.put("/{post_id}")
-@router.put("/{post_id}")
+@router.put("/{post_id}", response_model=PostResponse, summary="게시글 수정")
 def edit_post(post_id: int, payload: PostUpdate, db: DbSession):
-    p = db.query(Post).filter(Post.id == post_id).first()
-    if not p:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-    if p.password != payload.post_pwd:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Wrong password")
-    p.title = payload.post_title
-    p.content = payload.post_contents
-    db.commit()
-    return {"edit_success": True}
+    post = post_service.get_post(db, post_id)
+
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다.")
+
+    if not post_service.verify_password(post, payload.post_pwd):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비밀번호가 일치하지 않습니다.")
+
+    try:
+        updated = post_service.update_post(db, post, payload)
+        return updated
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="게시글 수정 중 오류가 발생했습니다.")
 
 
-@router.delete("/{post_id}")
-@router.delete("/{post_id}")
+from app.schemas import PostDeleteResponse
+
+@router.delete("/{post_id}", response_model=PostDeleteResponse, summary="게시글 삭제")
 def delete_post(post_id: int, payload: PostDelete, db: DbSession):
-    p = db.query(Post).filter(Post.id == post_id).first()
-    if not p:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-    if p.password != payload.post_pwd:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Wrong password")
-    db.delete(p)
-    db.commit()
-    return {"delete_success": True}
+    post = post_service.get_post(db, post_id)
+
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다.")
+
+    if not post_service.verify_password(post, payload.post_pwd):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="비밀번호가 일치하지 않습니다.")
+
+    try:
+        post_service.delete_post(db, post)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="게시글 삭제 중 오류가 발생했습니다.")
+
+    return PostDeleteResponse(id=post_id, message="게시글이 삭제되었습니다.")

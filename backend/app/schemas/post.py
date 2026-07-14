@@ -43,6 +43,13 @@ class PostDelete(BaseModel):
     post_pwd: str
 
 
+class PostDeleteResponse(BaseModel):
+    id: int
+    message: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PostListItem(BaseModel):
     id: int
     title: str

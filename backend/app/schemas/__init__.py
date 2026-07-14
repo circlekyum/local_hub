@@ -1,6 +1,7 @@
 from app.schemas.post import (
 	PostCreate,
 	PostDelete,
+	PostDeleteResponse,
 	PostListItem,
 	PostResponse,
 	PostUpdate,
@@ -9,6 +10,7 @@ from app.schemas.post import (
 __all__ = [
 	"PostCreate",
 	"PostDelete",
+	"PostDeleteResponse",
 	"PostListItem",
 	"PostResponse",
 	"PostUpdate",
