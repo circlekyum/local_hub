@@ -20,12 +20,15 @@ export const usePlaces = defineStore('places', () => {
     const query = (q ?? searchText.value).trim()
     if (!query) {
       places.value = []
+      selected.value = null
       return
     }
     loading.value = true
     try {
       const res = await fetchPlaces(query)
       places.value = res
+      // 검색 후 첫 결과가 있으면 자동 선택(지도 줌인 트리거)
+      selected.value = res.length > 0 ? res[0] : null
     } finally {
       loading.value = false
     }
