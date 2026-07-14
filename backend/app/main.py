@@ -1,15 +1,22 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import FastAPI, Depends
+import logging
+
+from fastapi import FastAPI, Depends, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import create_tables, get_db
 from app.routers import posts, places, chat
 from app.models import Post  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -28,6 +35,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for error in exc.errors():
+        field = ".".join(str(loc) for loc in error.get("loc", []))
+        errors.append({"field": field, "message": error.get("msg"), "type": error.get("type")})
+
+    return JSONResponse(status_code=422, content={"detail": "입력값이 올바르지 않습니다.", "errors": errors})
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    logger.error("Database error: %s %s (%s)", request.method, request.url.path, type(exc).__name__)
+    return JSONResponse(status_code=500, content={"detail": "데이터베이스 처리 중 오류가 발생했습니다."})
 
 
 @app.get("/health")

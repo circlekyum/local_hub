@@ -11,6 +11,7 @@ from app.schemas.post import (
     PostUpdate,
     PostDelete,
 )
+from app.schemas import ErrorResponse
 from app.services import post_service
 from typing import Annotated
 
@@ -26,15 +27,27 @@ def list_posts(db: DbSession):
     return posts
 
 
-@router.get("/{post_id}", response_model=PostResponse, summary="게시글 상세 조회")
+@router.get(
+    "/{post_id}",
+    response_model=PostResponse,
+    summary="게시글 상세 조회",
+    responses={404: {"model": ErrorResponse, "description": "게시글 없음"}},
+)
 def get_post(post_id: int, db: DbSession):
-    p = post_service.get_post(db, post_id)
-    if not p:
+    # centralized 404 handling
+    post = post_service.get_post(db, post_id)
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다.")
-    return p
+    return post
 
 
-@router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED, summary="게시글 작성")
+@router.post(
+    "",
+    response_model=PostResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="게시글 작성",
+    responses={500: {"model": ErrorResponse, "description": "DB 처리 실패"}},
+)
 def create_post(post_data: PostCreate, db: DbSession):
     try:
         post = post_service.create_post(db, post_data)
@@ -43,7 +56,16 @@ def create_post(post_data: PostCreate, db: DbSession):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="게시글 저장 중 오류가 발생했습니다.")
 
 
-@router.put("/{post_id}", response_model=PostResponse, summary="게시글 수정")
+@router.put(
+    "/{post_id}",
+    response_model=PostResponse,
+    summary="게시글 수정",
+    responses={
+        403: {"model": ErrorResponse, "description": "비밀번호 불일치"},
+        404: {"model": ErrorResponse, "description": "게시글 없음"},
+        500: {"model": ErrorResponse, "description": "DB 처리 실패"},
+    },
+)
 def edit_post(post_id: int, payload: PostUpdate, db: DbSession):
     post = post_service.get_post(db, post_id)
 
@@ -62,7 +84,16 @@ def edit_post(post_id: int, payload: PostUpdate, db: DbSession):
 
 from app.schemas import PostDeleteResponse
 
-@router.delete("/{post_id}", response_model=PostDeleteResponse, summary="게시글 삭제")
+@router.delete(
+    "/{post_id}",
+    response_model=PostDeleteResponse,
+    summary="게시글 삭제",
+    responses={
+        403: {"model": ErrorResponse, "description": "비밀번호 불일치"},
+        404: {"model": ErrorResponse, "description": "게시글 없음"},
+        500: {"model": ErrorResponse, "description": "DB 처리 실패"},
+    },
+)
 def delete_post(post_id: int, payload: PostDelete, db: DbSession):
     post = post_service.get_post(db, post_id)
 

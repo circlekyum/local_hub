@@ -6,6 +6,11 @@ from app.schemas.post import (
 	PostResponse,
 	PostUpdate,
 )
+from app.schemas.common import (
+	ErrorResponse,
+	ValidationErrorItem,
+	ValidationErrorResponse,
+)
 
 __all__ = [
 	"PostCreate",
@@ -14,4 +19,7 @@ __all__ = [
 	"PostListItem",
 	"PostResponse",
 	"PostUpdate",
+	"ErrorResponse",
+	"ValidationErrorItem",
+	"ValidationErrorResponse",
 ]
