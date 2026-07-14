@@ -1,66 +1,57 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.database import SessionLocal
+from app.database import SessionLocal, get_db
 from app import models
 from app.models.post import Post
-from app.schemas.post import PostCreate, PostUpdate, PostDelete
-from datetime import datetime
+from app.schemas.post import (
+    PostCreate,
+    PostListItem,
+    PostResponse,
+    PostUpdate,
+    PostDelete,
+)
+from app.services import post_service
+from typing import Annotated
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("", summary="List posts grouped by place")
-def list_posts(db: Session = Depends(get_db)):
-    posts = db.query(Post).order_by(Post.created_at.desc()).all()
-    grouped: dict = {}
-    for p in posts:
-        key = p.place_id or "default"
-        grouped.setdefault(key, []).append(
-            {"post_id": p.id, "post_title": p.title, "date": p.created_at.isoformat()}
-        )
-    result = [{"place_id": k, "posts": v} for k, v in grouped.items()]
-    return result
+@router.get("", response_model=list[PostListItem], summary="게시글 목록 조회")
+def list_posts(db: DbSession):
+    posts = post_service.get_posts(db)
+    return posts
 
 
-@router.get("/{post_id}")
-def get_post(post_id: int, db: Session = Depends(get_db)):
-    p = db.query(Post).filter(Post.id == post_id).first()
+@router.get("/{post_id}", response_model=PostResponse, summary="게시글 상세 조회")
+def get_post(post_id: int, db: DbSession):
+    p = post_service.get_post(db, post_id)
     if not p:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-    return {
-        "post_id": p.id,
-        "title": p.title,
-        "contents": p.content,
-        "date": p.created_at.isoformat(),
-    }
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다.")
+    return p
 
 
 @router.post("", status_code=201)
-def create_post(payload: PostCreate, db: Session = Depends(get_db)):
-    post = Post(
-        title=payload.post_title,
-        content=payload.post_contents,
-        password=payload.post_pwd,
-        place_id=payload.place_id,
-        created_at=datetime.utcnow(),
-    )
-    db.add(post)
-    db.commit()
-    db.refresh(post)
-    return {"post_success": True, "post_id": post.id}
+@router.post(
+    "",
+    response_model=PostResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="게시글 작성",
+)
+def create_post(post_data: PostCreate, db: DbSession):
+    try:
+        post = post_service.create_post(db, post_data)
+        return post
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="게시글 저장 중 오류가 발생했습니다.")
 
 
 @router.put("/{post_id}")
-def edit_post(post_id: int, payload: PostUpdate, db: Session = Depends(get_db)):
+@router.put("/{post_id}")
+def edit_post(post_id: int, payload: PostUpdate, db: DbSession):
     p = db.query(Post).filter(Post.id == post_id).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
@@ -73,7 +64,8 @@ def edit_post(post_id: int, payload: PostUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{post_id}")
-def delete_post(post_id: int, payload: PostDelete, db: Session = Depends(get_db)):
+@router.delete("/{post_id}")
+def delete_post(post_id: int, payload: PostDelete, db: DbSession):
     p = db.query(Post).filter(Post.id == post_id).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
