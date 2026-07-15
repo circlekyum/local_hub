@@ -41,7 +41,16 @@ def posts_by_place(place_id: str, db: DbSession):
 
 @router.get("/by_place_keyword", summary="place_id 키워드로 place_id 목록과 관련 게시글 반환")
 def posts_by_place_keyword(keyword: str, db: DbSession):
-    place_id, posts = post_service.get_post_keyword(db, keyword)
+    try:
+        place_id, posts = post_service.get_post_keyword(db, keyword)
+    except Exception:
+        # unexpected error when querying region DB or posts
+        raise HTTPException(status_code=500, detail="지역 검색 처리 중 오류가 발생했습니다.")
+
+    # normalize empty place_id to None for client clarity
+    if not place_id:
+        return {"place_id": None, "posts": []}
+
     return {"place_id": place_id, "posts": [PostListItem.from_orm(p) for p in posts]}
 
 

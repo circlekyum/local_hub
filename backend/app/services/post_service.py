@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.models.post import Post
 from app.schemas.post import PostCreate
+from app.config import settings
+import logging
 
 
 def get_posts(db: Session) -> List[Post]:
@@ -27,36 +29,37 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[list[str], list[Post]]:
     - posts: Post 객체 리스트 (최신순)
     """
     if not keyword:
-        return [], []
+        return "", []
 
-    # Locate region DB (expected at backend/data/region.db)
-    from pathlib import Path
-    region_db = Path(__file__).resolve().parents[2] / "data" / "region.db"
+    # Locate region DB via settings
+    region_db = settings.region_db_file
     if not region_db.exists():
-        # no region DB found
-        return [], []
+        logging.getLogger(__name__).warning("Region DB not found at %s", region_db)
+        return "", []
 
     import sqlite3
+    conn = None
+    place_ids: list[str] = []
     try:
         conn = sqlite3.connect(str(region_db))
         cur = conn.cursor()
-        # case-insensitive search for title containing keyword
         cur.execute("SELECT DISTINCT contentid FROM attractions WHERE title LIKE ? COLLATE NOCASE", (f"%{keyword}%",))
         rows = cur.fetchall()
-        place_ids = [r[0] for r in rows if r[0]]
+        place_ids = [r[0] for r in rows if r and r[0]]
+    except Exception:
+        logging.getLogger(__name__).exception("Error querying region DB %s", region_db)
+        return "", []
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
     if not place_ids:
-        return None, []
+        return "", []
 
-    # Use the first matched place_id (single string) as requested
     place_id = place_ids[0]
-
-    # Query community posts whose place_id equals the found contentid
     stmt_posts = select(Post).where(Post.place_id == place_id).order_by(Post.created_at.desc(), Post.id.desc())
     posts = list(db.scalars(stmt_posts).all())
 
