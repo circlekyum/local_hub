@@ -128,7 +128,7 @@ def generate_answer(question: str, community_db: Session, attractions_db: Sessio
     keywords = _extract_keywords_with_llm(question)
 
     posts = _retrieve_posts_by_keywords(db=community_db, keywords=keywords, limit=10)
-    attractions = _retrieve_attractions_by_keywords(db=attractions_db, keywords=keywords, limit=10)
+    attractions = _retrieve_attractions_by_keywords(db=attractions_db, keywords=keywords, limit=20)
 
     # context 병합
     context_parts = []
