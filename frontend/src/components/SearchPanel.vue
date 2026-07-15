@@ -37,7 +37,13 @@
 
       <!-- 게시물 리스트 -->
       <div class="posts-wrap" v-if="isSearched">
-        <h3 class="posts-title">{{ regionTitle }}</h3>
+        <!-- <h3 class="posts-title">{{ regionTitle }}</h3> -->
+        <div class="posts-header">
+          <h3 class="posts-title">{{ regionTitle }}</h3>
+          <button class="write-btn" @click="onCreateClick" aria-label="글 작성">
+            <span class="write-icon">✏️</span>
+          </button>
+        </div>
 
         <div v-if="posts.length === 0" class="no-posts">
           <div>첫 글을 작성해보세요</div>
@@ -109,6 +115,7 @@ interface Post {
 
 const emit = defineEmits<{
   (e: 'open-post', post: Post): void
+  (e: 'open-create'): void // 글쓰기 창 열어달라는 신호 추가
 }>()
 
 const store = usePlaces()
@@ -285,7 +292,8 @@ function scrollActiveIntoView() {
 }
 
 function onCreateClick() {
-  alert('글 작성 기능은 다음 단계에서 구현합니다.')
+  // alert('글 작성 기능은 다음 단계에서 구현합니다.')
+  emit('open-create')
 }
 
 const regionTitle = computed(() => {
@@ -303,7 +311,6 @@ const regionTitle = computed(() => {
   justify-content: center;
 }
 .left-col {
-  /* width: 400px; */
   width: 100%;
   max-width: 400px;
   height: 100%;
@@ -311,7 +318,7 @@ const regionTitle = computed(() => {
   flex-direction: column;
   overflow: hidden;
 }
-.search-center {
+/* .search-center {
   margin: auto 0;
   width: 100%;
   display: flex;
@@ -319,16 +326,44 @@ const regionTitle = computed(() => {
   align-items: center;
   padding: 12px;
   box-sizing: border-box;
+} */
+
+/* 검색창 감싸는 영역 */
+.search-center {
+  margin: auto 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 .search-panel.compact .search-center {
   margin: 12px 0;
   align-items: stretch;
+  padding: 12px;
 }
-.panel-title {
+
+/* 패널 제목 */
+/* .panel-title {
   margin: 0 0 12px 0;
   font-size: 18px;
   text-align: center;
+} */
+.panel-title {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #102a43;
+  text-align: center;
 }
+.search-panel.compact .panel-title {
+  font-size: 16px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
 .controls {
   display: flex;
   gap: 8px;
@@ -341,9 +376,53 @@ const regionTitle = computed(() => {
 }
 .controls input {
   width: 100%;
-  padding: 6px 8px;
+  /* padding: 6px 8px; */
+  padding: 11px 14px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #102a43;
+  background-color: #fff;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+}.controls input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
+.controls input::placeholder {
+  color: #788fa7;
+  font-size: 13px;
+  font-weight: 400;
+}
+/* 검색 버튼 */
+.controls button {
+  padding: 0 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+  transition: background 0.2s, transform 0.1s, opacity 0.2s;
+}
+.controls button:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+.controls button:active:not(:disabled) {
+  transform: translateY(0);
+}
+.controls button:disabled {
+  background: #bcccdc;
+  color: #f0f4f8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .suggestions {
   position: absolute;
   top: calc(100% + 6px);
@@ -351,43 +430,108 @@ const regionTitle = computed(() => {
   right: 0;
   background: #fff;
   border: 1px solid #e6e6e6;
-  border-radius: 4px;
+  border-radius: 8px;
   max-height: 220px;
   overflow: auto;
   z-index: 30;
   list-style: none;
   margin: 0;
   padding: 6px 0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  /* box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 .suggestions li {
-  padding: 8px 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #334e68;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
+
 .suggestions li:hover,
 .suggestions li.highlighted {
-  background: #f5faff;
+  background: #f0f7ff;
+  color: #2563eb;
+  font-weight: 600;
 }
+/* 게시글 헤더 */
+.posts-header {
+  display: flex;
+  justify-content: space-between; /* 제목은 왼쪽 끝, 버튼은 오른쪽 끝으로 밀어냄 */
+  align-items: center;            /* 세로 기준 정중앙 정렬 */
+  margin: 12px 0 8px 0;
+}
+.posts-title {
+  /* margin: 8px 0; */
+  font-size: 16px;
+  font-weight: 700;
+  color: #102a43;
+}
+.write-btn {
+  background: #3b82f6; /* 부드러운 파란색 */
+  border: none;
+  border-radius: 50%;   /* 동그란 모양 */
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.write-btn:hover {
+  background: #2563eb; /* 호버 시 조금 더 어두운 파란색 */
+  transform: scale(1.05); /* 살짝 커지는 효과 */
+}
+.write-icon {
+  font-size: 14px;
+  color: white;
+}
+
+/* 게시글 노출 영역 */
 .posts-wrap {
   padding: 8px 12px;
   border-top: 1px solid #eee;
 
   flex: 1;               /* 검색창을 제외한 남은 세로 공간을 전부 차지합니다 */
   min-height: 0;         /* flex 안에서 스크롤이 정상 작동하기 위한 CSS 필수 트릭 */
-  overflow-y: auto;      /* 세로로 내용이 넘치면 이 영역에만 스크롤바를 만듭니다 */
+  /* overflow-y: auto;      세로로 내용이 넘치면 이 영역에만 스크롤바를 만듭니다 */
+  display: flex;
+  flex-direction: column; /*자식 요소들을 세로로 배치*/
 }
-.posts-title {
-  margin: 8px 0;
-  font-size: 16px;
-}
+/* 게시물 없을 때 */
 .no-posts {
-  padding: 12px;
-  color: #666;
+  padding: 24px 12px;
+  color: #627d98;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  flex: 1;
 }
+.no-posts button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.no-posts button:hover {
+  background: #2563eb;
+}
+
 .posts-list {
   list-style: none;
   padding: 0;
   margin: 0;
+
+  flex: 1;               /* 남은 세로 공간을 전부 차지 */
+  overflow-y: auto; /* 세로로 내용이 넘치면 이 영역에만 스크롤바*/
 }
 /* .posts-list li {
   padding: 10px;
@@ -467,13 +611,6 @@ const regionTitle = computed(() => {
   font-size: 12px;
   color: #7b8794;
 }
-/* .post-title {
-  font-weight: 600;
-}
-.post-meta {
-  font-size: 12px;
-  color: #777;
-} */
 
 .rating {
   display: inline-flex;
@@ -488,7 +625,7 @@ const regionTitle = computed(() => {
 .rating .star.muted {
   color: #e6e9ee;
 }
-
+/* 검색 결과 리스트 */
 .results {
   list-style: none;
   padding: 0;
@@ -497,23 +634,32 @@ const regionTitle = computed(() => {
   flex: 1;
 }
 .results li {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
+  padding: 12px;
+  border-bottom: 1px solid #f0f4f8;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.results li:hover {
+  background: #f8fafc;
 }
 .results li.active {
   background: #f0f8ff;
 }
 .title {
-  font-weight: 600;
+  font-weight: 700;
+  color: #102a43;
 }
 .addr {
   font-size: 12px;
-  color: #666;
+  color: #627d98;
+  margin-top: 4px;
 }
 .loading {
   font-style: italic;
-  margin: 8px 12px;
+  color: #627d98;
+  margin: 12px;
+  font-size: 14px;
+  text-align: center;
 }
 
 /* 오른쪽 상세 패널 */
