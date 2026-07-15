@@ -3,4 +3,88 @@
 .env
 venv
 *.json
+
+
+# ==========================================
+# 1. OS & Editors (운영체제 및 에디터 개인 설정)
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# ==========================================
+# 2. Security & Environment (보안 및 환경 변수)
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+certs/
+
+# ==========================================
+# 3. Frontend (Vue.js / Node.js)
+# ==========================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Cypress/Playwright 등 테스트 도구 관련
+/cypress/videos/
+/cypress/screenshots/
+/.playwright/
+
+# ==========================================
+# 4. Backend (FastAPI / Python)
+# ==========================================
+# 바이트코드 및 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 가상환경 (Virtual Environments)
+.venv/
+venv/
+ENV/
+env/
+
+# 패키징 및 빌드 결과물
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 데이터베이스 (SQLite 등 로컬 테스트용 DB 사용 시)
 *.db
+*.sqlite3
