@@ -18,7 +18,9 @@ class Settings:
     def __init__(self) -> None:
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.database_path = os.getenv("DATABASE_PATH", "data/community.db")
-        self.cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        # Prefer ALLOWED_ORIGINS if provided (BE-11)
+        origins = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ORIGINS", "http://localhost:5173")
+        self.cors_origins = origins.split(",")
         self.selected_region = os.getenv("SELECTED_REGION", "대전/충청")
         self.region_data_path = os.getenv("REGION_DATA_PATH", "data/region_data.json")
 
