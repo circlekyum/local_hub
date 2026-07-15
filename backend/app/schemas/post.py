@@ -69,6 +69,7 @@ class PostResponse(PostBase):
 
 class PostByPlaceKeywordResponse(BaseModel):
     place_id: str | None = None
+    place: dict | None = None
     posts: list[PostListItem] = []
 
     model_config = ConfigDict(from_attributes=True)
