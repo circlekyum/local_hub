@@ -18,6 +18,7 @@ class Settings:
     def __init__(self) -> None:
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.database_path = os.getenv("DATABASE_PATH", "data/community.db")
+        self.attractions_database_path = os.getenv("ATTRACTIONS_DATABASE_PATH", "database/seoul_attractions.db")
         # Prefer ALLOWED_ORIGINS if provided (BE-11)
         origins = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ORIGINS", "http://localhost:5173")
         self.cors_origins = origins.split(",")
@@ -27,6 +28,14 @@ class Settings:
     @property
     def database_url(self) -> str:
         db_path = Path(self.database_path)
+        if not db_path.is_absolute():
+            db_path = BASE_DIR / db_path
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return f"sqlite:///{db_path.as_posix()}"
+    
+    @property
+    def attractions_database_url(self) -> str:
+        db_path = Path(self.attractions_database_path)
         if not db_path.is_absolute():
             db_path = BASE_DIR / db_path
         db_path.parent.mkdir(parents=True, exist_ok=True)
