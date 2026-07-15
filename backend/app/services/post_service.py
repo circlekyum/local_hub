@@ -19,7 +19,7 @@ def get_post(db: Session, post_id: int) -> Post | None:
     return db.get(Post, post_id)
 
 # get_post_keyword : keyword를 포함하는 place_id, place_id 를 가진 post 들을 반환
-def get_post_keyword(db: Session, keyword: str) -> tuple[list[str], list[Post]]:
+def get_post_keyword(db: Session, keyword: str) -> tuple[str, dict | None, list[Post]]:
     """
     region.title 에 키워드가 포함되는 attractions 레코드의 contentid들을 찾아,
     community DB의 posts 중 place_id가 해당 contentid인 게시글들을 반환합니다.
@@ -29,7 +29,7 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[list[str], list[Post]]:
     - posts: Post 객체 리스트 (최신순)
     """
     if not keyword:
-        return "", []
+        return "", None, []
 
     # Locate region DB via settings
     region_db = settings.region_db_file
@@ -40,12 +40,19 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[list[str], list[Post]]:
     import sqlite3
     conn = None
     place_ids: list[str] = []
+    place_row = None
     try:
         conn = sqlite3.connect(str(region_db))
         cur = conn.cursor()
-        cur.execute("SELECT DISTINCT contentid FROM attractions WHERE title LIKE ? COLLATE NOCASE", (f"%{keyword}%",))
+        cur.execute(
+            "SELECT DISTINCT contentid, title, addr1, addr2, mapx, mapy FROM attractions WHERE title LIKE ? COLLATE NOCASE",
+            (f"%{keyword}%",),
+        )
         rows = cur.fetchall()
+        # rows may contain multiple; we pick first
         place_ids = [r[0] for r in rows if r and r[0]]
+        if rows:
+            place_row = rows[0]
     except Exception:
         logging.getLogger(__name__).exception("Error querying region DB %s", region_db)
         return "", []
@@ -57,13 +64,33 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[list[str], list[Post]]:
                 pass
 
     if not place_ids:
-        return "", []
+        return "", None, []
 
     place_id = place_ids[0]
+
+    # build place metadata from place_row if present
+    place_info = None
+    if place_row:
+        # place_row order: contentid, title, addr1, addr2, mapx, mapy
+        contentid, title, addr1, addr2, mapx, mapy = place_row
+        addr_parts = []
+        if addr1:
+            addr_parts.append(addr1)
+        if addr2:
+            addr_parts.append(addr2)
+        addr = " ".join(addr_parts) if addr_parts else None
+        place_info = {
+            "id": contentid,
+            "longitude": float(mapx) if mapx is not None else None,
+            "latitude": float(mapy) if mapy is not None else None,
+            "name": title,
+            "addr": addr,
+        }
+
     stmt_posts = select(Post).where(Post.place_id == place_id).order_by(Post.created_at.desc(), Post.id.desc())
     posts = list(db.scalars(stmt_posts).all())
 
-    return place_id, posts
+    return place_id, place_info, posts
 
 
 def search_posts(db: Session, keyword: str) -> list[Post]:

@@ -17,12 +17,12 @@ def test_get_post_keyword_matches_posts(tmp_path):
     conn = sqlite3.connect(str(region_db_path))
     cur = conn.cursor()
     cur.execute(
-        "CREATE TABLE attractions (contentid TEXT PRIMARY KEY, title TEXT)"
+        "CREATE TABLE attractions (contentid TEXT PRIMARY KEY, title TEXT, addr1 TEXT, addr2 TEXT, mapx REAL, mapy REAL)"
     )
-    # insert a matching attraction
+    # insert a matching attraction with address and coordinates
     cur.execute(
-        "INSERT INTO attractions (contentid, title) VALUES (?, ?)",
-        ("place123", "Some Keyword Place"),
+        "INSERT INTO attractions (contentid, title, addr1, addr2, mapx, mapy) VALUES (?, ?, ?, ?, ?, ?)",
+        ("place123", "Some Keyword Place", "Addr1", "Addr2", 127.001, 37.500),
     )
     conn.commit()
     conn.close()
@@ -42,9 +42,16 @@ def test_get_post_keyword_matches_posts(tmp_path):
     session.commit()
 
     # Call the function under test
-    place_id, posts = get_post_keyword(session, "Keyword")
+    place_id, place_info, posts = get_post_keyword(session, "Keyword")
 
     assert place_id == "place123"
+    assert isinstance(place_info, dict)
+    assert place_info["id"] == "place123"
+    assert place_info["longitude"] == 127.001
+    assert place_info["latitude"] == 37.5
+    assert place_info["name"] == "Some Keyword Place"
+    assert place_info["addr"] == "Addr1 Addr2"
+
     assert isinstance(posts, list)
     assert len(posts) == 1
     assert posts[0].place_id == "place123"
