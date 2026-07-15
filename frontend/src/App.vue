@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
 import SearchPanel from './components/SearchPanel.vue'
 import MapView from './components/MapView.vue'
 import { usePlaces } from './stores/usePlaces' // 🌟 장소 데이터를 연동하기 위해 store 가져옴
