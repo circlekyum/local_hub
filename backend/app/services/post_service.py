@@ -35,7 +35,7 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[str, dict | None, list[
     region_db = settings.region_db_file
     if not region_db.exists():
         logging.getLogger(__name__).warning("Region DB not found at %s", region_db)
-        return "", []
+        return "", None, []
 
     import sqlite3
     conn = None
@@ -55,7 +55,7 @@ def get_post_keyword(db: Session, keyword: str) -> tuple[str, dict | None, list[
             place_row = rows[0]
     except Exception:
         logging.getLogger(__name__).exception("Error querying region DB %s", region_db)
-        return "", []
+        return "", None,[]
     finally:
         if conn:
             try:
