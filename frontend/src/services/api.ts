@@ -86,3 +86,51 @@ export async function fetchPostsByPlaceKeyword(keyword: string) {
   if (!res.ok) throw new Error(`API error ${res.status}`)
   return await res.json() // { place_id: string | null, posts: PostListItem[] }
 }
+
+export async function createPost(data: { post_title: string; post_contents: string; post_pwd: string; place_id?: string | null }) {
+  const url = `${API_BASE}/api/posts`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    const e: any = new Error(txt || `API error ${res.status}`)
+    e.status = res.status
+    throw e
+  }
+  return await res.json()
+}
+
+export async function updatePost(postId: number, data: { post_title: string; post_contents: string; post_pwd: string }) {
+  const url = `${API_BASE}/api/posts/${postId}`
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    const e: any = new Error(txt || `API error ${res.status}`)
+    e.status = res.status
+    throw e
+  }
+  return await res.json()
+}
+
+export async function deletePost(postId: number, post_pwd: string) {
+  const url = `${API_BASE}/api/posts/${postId}`
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ post_pwd }),
+  })
+  if (!res.ok) {
+    const txt = await res.text()
+    const e: any = new Error(txt || `API error ${res.status}`)
+    e.status = res.status
+    throw e
+  }
+  return true
+}
