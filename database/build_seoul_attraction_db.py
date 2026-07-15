@@ -5,6 +5,8 @@ from sqlalchemy import (
     create_engine, Column, String, Integer, Float, DateTime, Text, Index
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
+from dotenv import load_dotenv
+import os
 
 Base = declarative_base()
 
@@ -49,7 +51,7 @@ def parse_dt(s: str):
             continue
     return None
 
-def load_json_to_db(json_path: str, db_url: str = "sqlite:///seoul_attractions.db"):
+def load_json_to_db(json_path: str, db_url: str = "sqlite:///seoul_attraction.db"):
     engine = create_engine(db_url, echo=False, future=True)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, future=True)
@@ -109,4 +111,5 @@ def load_json_to_db(json_path: str, db_url: str = "sqlite:///seoul_attractions.d
         session.commit()
 
 if __name__ == "__main__":
-    load_json_to_db("seoul_data/seoul_attraction.json")
+    load_dotenv()
+    load_json_to_db(os.getenv("JSON_PATH"))
