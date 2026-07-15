@@ -4,6 +4,7 @@ from app.schemas.post import (
 	PostDeleteResponse,
 	PostListItem,
 	PostResponse,
+	PostByPlaceKeywordResponse,
 	PostUpdate,
 )
 from app.schemas.common import (
