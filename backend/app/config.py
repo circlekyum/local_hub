@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv()
+# Ensure we load the backend/.env file explicitly so environment variables
+# (like OPENAI_API_KEY) are available even when uvicorn is started from
+# a different working directory.
+load_dotenv(BASE_DIR / ".env")
 
 
 class Settings:
