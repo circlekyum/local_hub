@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.post import Post
-
+from app.models.place import Place
 
 _api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
 
@@ -86,6 +86,20 @@ def _retrieve_posts_by_keywords(
         .all()
     )
 
+# 신규: attractions 검색
+def _retrieve_attractions_by_keywords(
+    db: Session,
+    keywords: List[str],
+    limit: int = 5,
+) -> List[Place]:
+    if not keywords:
+        return []
+    conditions = []
+    for keyword in keywords:
+        like = f"%{keyword}%"
+        conditions.append(Place.title.ilike(like))
+        conditions.append(Place.raw.ilike(like))
+    return db.query(Place).filter(or_(*conditions)).limit(limit).all()
 
 def _build_context_text(posts: List[Post]) -> str:
     if not posts:
@@ -106,26 +120,33 @@ def _build_context_text(posts: List[Post]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def generate_answer(question: str, db: Session) -> str:
+def generate_answer(question: str, community_db: Session, attractions_db: Session) -> str:
     question = question.strip()
-
     if not question:
         return "질문을 입력해주세요."
 
-    # 1. LLM으로 검색 키워드 추출
     keywords = _extract_keywords_with_llm(question)
 
-    # 2. 추출된 키워드로 DB 검색
-    docs = _retrieve_posts_by_keywords(
-        db=db,
-        keywords=keywords,
-        limit=5,
-    )
+    posts = _retrieve_posts_by_keywords(db=community_db, keywords=keywords, limit=10)
+    attractions = _retrieve_attractions_by_keywords(db=attractions_db, keywords=keywords, limit=10)
 
-    # 3. 검색 결과를 문맥으로 구성
-    context = _build_context_text(docs)
+    # context 병합
+    context_parts = []
+    if posts:
+        context_parts.append(_build_context_text(posts))
+    if attractions:
+        parts = []
+        for idx, a in enumerate(attractions, start=1):
+            parts.append(
+                f"[관광지 {idx}]\n"
+                f"제목: {a.title or ''}\n"
+                f"주소: {a.addr1 or ''}\n"
+                f"요약: {(a.raw or '')[:2000]}"
+            )
+        context_parts.append("\n\n---\n\n".join(parts))
 
-    # 4. 검색된 게시글을 바탕으로 답변 생성
+    context = "\n\n---\n\n".join(context_parts) if context_parts else "관련 문서가 없습니다."
+
     response = _client.responses.create(
         model="gpt-5-mini",
         instructions=(
@@ -143,8 +164,6 @@ def generate_answer(question: str, db: Session) -> str:
     )
 
     answer = response.output_text
-
     if not answer:
         return "답변을 생성하지 못했습니다."
-
     return answer.strip()
