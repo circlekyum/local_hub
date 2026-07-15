@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import SearchPanel from './components/SearchPanel.vue'
 import MapView from './components/MapView.vue'
 import { usePlaces } from './stores/usePlaces' // 🌟 장소 데이터를 연동하기 위해 store 가져옴
+import { onMounted } from 'vue'
+// import { fetchAllPlaces } from './services/api'
 
 interface Post {
   post_id: string
@@ -23,11 +25,22 @@ const writeForm = ref({
   password: ''
 })
 
+// onMounted(async () => {
+//   try {
+//     const all = await fetchAllPlaces()
+//     store.places = all
+//     console.log('all places loaded', all)
+//   } catch (e) {
+//     console.error('all places load failed', e)
+//   }
+// })
+
 // 게시글 상세 열기
 function openPost(p: Post) {
   isWriting.value = false // 글쓰기 창은 닫아줌
   activePost.value = p
 }
+
 function closeDetail() {
   activePost.value = null
 }
@@ -44,10 +57,45 @@ function closeWrite() {
 }
 
 // 🌟 저장하기 버튼 클릭 시 동작 (지금은 테스트용 로직)
-function handleSave() {
-  alert(`저장되었습니다!\n장소: ${store.selected?.name || '선택 없음'}\n제목: ${writeForm.value.title}`)
-  isWriting.value = false
+// function handleSave() {
+//   alert(`저장되었습니다!\n장소: ${store.selected?.name || '선택 없음'}\n제목: ${writeForm.value.title}`)
+//   isWriting.value = false
+// }
+async function handleSave() {
+  const payload = {
+    post_title: writeForm.value.title,
+    post_contents: writeForm.value.contents,
+    post_pwd: writeForm.value.password,
+    place_id: store.selected?.id ?? null
+  }
+
+  try {
+    const res = await fetch('http://localhost:8000/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (res.status === 201) {
+      const data = await res.json()
+      isWriting.value = false
+      alert('저장되었습니다.')
+      // 필요하면 반환된 data를 사용해 UI 갱신 (예: 새로운 post id)
+      console.log('created post:', data)
+    } else if (res.status === 422) {
+      const err = await res.json()
+      console.error(err)
+      alert('입력값 오류: ' + JSON.stringify(err.errors))
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert(err.detail || '저장에 실패했습니다.')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('서버 요청 중 오류가 발생했습니다.')
+  }
 }
+
 </script>
 
 <template>

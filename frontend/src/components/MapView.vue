@@ -67,13 +67,13 @@ function renderMarkers() {
   markersLayer.clearLayers()
 
   for (const p of store.places) {
-    const m = L.marker([p.lat, p.lng]).addTo(markersLayer)
+    const m = L.marker([p.latitude, p.longitude]).addTo(markersLayer)
     m.bindPopup(`<strong>${p.name}</strong><div style="font-size:12px">${p.addr ?? ''}</div>`)
     m.on('click', () => store.selectPlace(p))
   }
 
   if (store.selected && map) {
-    map.flyTo([store.selected.lat, store.selected.lng], 15)
+    map.flyTo([store.selected.latitude, store.selected.longitude], 15)
   }
 }
 
@@ -89,7 +89,7 @@ watch(
   () => store.selected,
   (n) => {
     if (n && map) {
-      map.flyTo([n.lat, n.lng], 15)
+      map.flyTo([n.latitude, n.longitude], 15)
     }
   },
 )

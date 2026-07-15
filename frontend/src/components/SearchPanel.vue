@@ -103,7 +103,9 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+// import { storeToRefs } from 'pinia'
 import { usePlaces } from '../stores/usePlaces'
+import { fetchPostsByPlace, fetchPostById, fetchPostsByPlaceKeyword } from '../services/api'
 
 interface Post {
   post_id: string
@@ -123,7 +125,16 @@ const q = ref(store.searchText)
 const loading = store.loading
 const places = store.places
 const selected = store.selected
-
+// const posts = store.posts
+const posts = computed(() =>
+  store.posts.map((p) => ({
+    post_id: String(p.id),
+    post_title: p.title ?? '',
+    date: p.created_at ? new Date(p.created_at).toISOString().slice(0, 10) : '',
+    contents: '', // 상세 내용은 별도 조회(openPost)에서 채웁니다
+    place_id: selected?.id ?? undefined,
+  }))
+)
 watch(q, (v) => {
   store.searchText = v
 })
@@ -150,7 +161,7 @@ const inputEl = ref<HTMLInputElement | null>(null)
 const isSearched = ref(false)
 
 const dummyStore: Record<string, Post[]> = {}
-const posts = ref<Post[]>([])
+const postsList = ref<Post[]>([])
 const activePost = ref<Post | null>(null)
 
 const filteredSuggestions = computed(() => {
@@ -173,34 +184,53 @@ function chooseSuggestion(s: string) {
   doSearch()
 }
 
-function doSearch() {
+// function doSearch() {
+//   isSearched.value = true
+//   store.search(q.value)
+//   showSuggestions.value = false
+//   activeIndex.value = -1
+//   loadPostsByName(q.value)
+// }
+async function doSearch() {
+  const keyword = q.value.trim()
+  if (!keyword) return
+
   isSearched.value = true
-  store.search(q.value)
   showSuggestions.value = false
   activeIndex.value = -1
-  loadPostsByName(q.value)
-}
+  console.log('실제 DB 검색 시작: ', keyword)
+  await store.search(q.value)
 
-function selectAndLoad(p: any) {
-  select(p)
-  loadPosts(p.id, p.name)
+  // 해당 장소의 post 보여주기 필요
+  // posts value 활용하는 loadPosts 함수 필요!
+  // loadPosts(selected.value?.id, q.value)
+}
+// function selectAndLoad(p: any) {
+//   select(p)
+//   loadPosts(p.id, p.name)
+// }
+async function selectAndLoad(p: any) {
+
+  await store.selectPlace(p)
+  isSearched.value = true;
 }
 
 function select(p: any) {
   store.selectPlace(p)
 }
 
-function loadPosts(placeId?: string, placeName?: string) {
-  const key = placeId ?? placeName ?? q.value ?? 'default'
-  posts.value = makeDummyPostsFor(key)
-  activePost.value = null
-}
+// function loadPosts(placeId?: string, placeName?: string) {
+//   const key = placeId ?? placeName ?? q.value ?? 'default'
+//   posts.value = makeDummyPostsFor(key)
+//   activePost.value = null
+// }
 
-function loadPostsByName(name: string) {
-  const key = (name || 'default').toLowerCase()
-  posts.value = makeDummyPostsFor(key)
-  activePost.value = null
-}
+
+// function loadPostsByName(name: string) {
+//   const key = (name || 'default').toLowerCase()
+//   posts.value = makeDummyPostsFor(key)
+//   activePost.value = null
+// }
 
 function makeDummyPostsFor(key: string) {
   if (dummyStore[key]) return dummyStore[key]
@@ -232,9 +262,27 @@ function makeDummyPostsFor(key: string) {
   return arr
 }
 
-function openPost(p: Post) {
-  // 상세 패널을 부모(App.vue)로 위임
-  emit('open-post', p)
+// function openPost(p: Post) {
+//   // 상세 패널을 부모(App.vue)로 위임
+//   emit('open-post', p)
+// }
+async function openPost(p: Post) {
+  try {
+    const id = Number(p.post_id)
+    const detail = await fetchPostById(id)
+    const payload = {
+      post_id: String(detail.id),
+      post_title: detail.title || detail.post_title || '',
+      date: new Date(detail.created_at).toISOString().slice(0, 10),
+      contents: detail.content ?? detail.post_contents ?? '',
+      place_id: detail.place_id ?? p.place_id,
+    }
+    emit('open-post', payload)
+  } catch (err) {
+    console.error('openPost error', err)
+    // fallback: emit list item without contents
+    emit('open-post', p)
+  }
 }
 
 function truncate(s: string, len = 60) {
@@ -297,7 +345,7 @@ function onCreateClick() {
 }
 
 const regionTitle = computed(() => {
-  return (selected && selected.name) || (q.value && q.value) || '선택된 지역'
+  return (selected && selected.value?.name ) || (q.value && q.value) || '선택된 지역'
 })
 </script>
 
