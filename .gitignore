@@ -18,6 +18,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+*.sw?
 
 # ==========================================
 # 2. Security & Environment (보안 및 환경 변수)
@@ -88,3 +89,26 @@ MANIFEST
 # 데이터베이스 (SQLite 등 로컬 테스트용 DB 사용 시)
 *.db
 *.sqlite3
+
+# ==========================================
+# Logs
+logs
+*.log
+lerna-debug.log*
+
+coverage
+*.local
+
+*.tsbuildinfo
+
+.eslintcache
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+
+# Vitest
+__screenshots__/
+
+# Vite
+*.timestamp-*-*.mjs
