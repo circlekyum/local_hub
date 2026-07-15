@@ -45,24 +45,9 @@ function closeWrite() {
 }
 
 // 🌟 저장하기 버튼 클릭 시 동작 (지금은 테스트용 로직)
-async function handleSave() {
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
-  const payload = {
-    post_title: writeForm.value.title,
-    post_contents: writeForm.value.contents,
-    post_pwd: writeForm.value.password,
-    place_id: store.selected?.id || null,
-  }
-
-  try {
-    const res = await axios.post(`${apiBase}/api/posts`, payload)
-    alert(`저장되었습니다!\nID: ${res.data.id} \n제목: ${res.data.title}`)
-    isWriting.value = false
-    // optional: you may want to refresh posts in the SearchPanel/store
-  } catch (err) {
-    console.error(err)
-    alert('저장 중 오류가 발생했습니다. 콘솔을 확인하세요.')
-  }
+function handleSave() {
+  alert(`저장되었습니다!\n장소: ${store.selected?.name || '선택 없음'}\n제목: ${writeForm.value.title}`)
+  isWriting.value = false
 }
 </script>
 
