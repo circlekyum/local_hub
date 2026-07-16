@@ -120,7 +120,6 @@ export async function updatePost(postId: number, data: { post_title: string; pos
 }
 
 export async function postChat(question: string): Promise<{ answer: string }> {
-  const API_BASE = 'http://localhost:8000'
   const url = `${API_BASE}/api/chat`
   const res = await fetch(url, {
     method: 'POST',
