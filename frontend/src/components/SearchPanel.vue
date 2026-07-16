@@ -81,8 +81,27 @@
                   <span class="star">★</span><span class="star">★</span><span class="star">★</span
                   ><span class="star muted">★</span><span class="star muted">★</span>
                 </div>
+
+                <div class="actions">
+                  <button class="icon-btn edit" @click.stop="onEdit(post)" aria-label="글 수정" title="수정">
+                    <!-- pencil SVG (그레이) -->
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" fill="#6b7280"/>
+                      <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#6b7280"/>
+                    </svg>
+                  </button>
+
+                  <button class="icon-btn delete" @click.stop="onDelete(post)" aria-label="글 삭제" title="삭제">
+                    <!-- trash SVG (그레이) -->
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M9 3h6l1 2h5v2H3V5h5l1-2z" fill="#6b7280"/>
+                      <path d="M6 9h12v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9z" fill="#6b7280"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
+
           </li>
         </ul>
       </div>
@@ -104,7 +123,9 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+// import { storeToRefs } from 'pinia'
 import { usePlaces } from '../stores/usePlaces'
+import { fetchPostById, updatePost, deletePost } from '../services/api'
 
 interface Post {
   post_id: string
@@ -118,6 +139,11 @@ const emit = defineEmits<{
   (e: 'open-post', post: Post): void
   (e: 'open-create'): void
   (e: 'open-chat'): void
+  (e: 'open-create'): void // 글쓰기 창 열어달라는 신호
+  // (e: 'edit-post', post: Post): void // 글 편집
+  (e: 'request-edit', post: Post): void // 글 편집
+  (e: 'delete-post', post: Post): void // 글 삭제
+
 }>()
 
 const store = usePlaces()
@@ -125,7 +151,16 @@ const q = ref(store.searchText)
 const loading = store.loading
 const places = store.places
 const selected = store.selected
-
+// const posts = store.posts
+const posts = computed(() =>
+  store.posts.map((p) => ({
+    post_id: String(p.id),
+    post_title: p.title ?? '',
+    date: p.created_at ? new Date(p.created_at).toISOString().slice(0, 10) : '',
+    contents: '', // 상세 내용은 별도 조회(openPost)에서 채웁니다
+    place_id: selected?.id ?? undefined,
+  }))
+)
 watch(q, (v) => {
   store.searchText = v
 })
@@ -152,7 +187,7 @@ const inputEl = ref<HTMLInputElement | null>(null)
 const isSearched = ref(false)
 
 const dummyStore: Record<string, Post[]> = {}
-const posts = ref<Post[]>([])
+const postsList = ref<Post[]>([])
 const activePost = ref<Post | null>(null)
 
 const filteredSuggestions = computed(() => {
@@ -161,6 +196,10 @@ const filteredSuggestions = computed(() => {
   const lower = val.toLowerCase()
   return keywords.filter((k) => k.toLowerCase().includes(lower)).slice(0, 6)
 })
+
+
+// const showEditModal = ref(false)
+// const editingPost = ref<Post | null>(null)
 
 function onInput() {
   const has = filteredSuggestions.value.length > 0 && q.value.trim().length >= 1
@@ -175,68 +214,105 @@ function chooseSuggestion(s: string) {
   doSearch()
 }
 
-function doSearch() {
+// function doSearch() {
+//   isSearched.value = true
+//   store.search(q.value)
+//   showSuggestions.value = false
+//   activeIndex.value = -1
+//   loadPostsByName(q.value)
+// }
+async function doSearch() {
+  const keyword = q.value.trim()
+  if (!keyword) return
+
   isSearched.value = true
-  store.search(q.value)
   showSuggestions.value = false
   activeIndex.value = -1
-  loadPostsByName(q.value)
-}
+  console.log('실제 DB 검색 시작: ', keyword)
+  await store.search(q.value)
 
-function selectAndLoad(p: any) {
-  select(p)
-  loadPosts(p.id, p.name)
+  // 해당 장소의 post 보여주기 필요
+  // posts value 활용하는 loadPosts 함수 필요!
+  // loadPosts(selected.value?.id, q.value)
+}
+// function selectAndLoad(p: any) {
+//   select(p)
+//   loadPosts(p.id, p.name)
+// }
+async function selectAndLoad(p: any) {
+
+  await store.selectPlace(p)
+  isSearched.value = true;
 }
 
 function select(p: any) {
   store.selectPlace(p)
 }
 
-function loadPosts(placeId?: string, placeName?: string) {
-  const key = placeId ?? placeName ?? q.value ?? 'default'
-  posts.value = makeDummyPostsFor(key)
-  activePost.value = null
-}
+// function loadPosts(placeId?: string, placeName?: string) {
+//   const key = placeId ?? placeName ?? q.value ?? 'default'
+//   posts.value = makeDummyPostsFor(key)
+//   activePost.value = null
+// }
 
-function loadPostsByName(name: string) {
-  const key = (name || 'default').toLowerCase()
-  posts.value = makeDummyPostsFor(key)
-  activePost.value = null
-}
 
-function makeDummyPostsFor(key: string) {
-  if (dummyStore[key]) return dummyStore[key]
+// function loadPostsByName(name: string) {
+//   const key = (name || 'default').toLowerCase()
+//   posts.value = makeDummyPostsFor(key)
+//   activePost.value = null
+// }
 
-  const arr: Post[] = [
-    {
-      post_id: key + '-1',
-      post_title: `${capitalize(key)}의 첫번째 추천 장소`,
-      date: '2026-07-14',
-      contents: `${capitalize(key)} 지역에 대해 작성된 더미 글 내용입니다. 상세 설명 A.`,
-      place_id: key,
-    },
-    {
-      post_id: key + '-2',
-      post_title: `${capitalize(key)}에서 가볼만한 카페 리스트`,
-      date: '2026-07-10',
-      contents: `${capitalize(key)} 지역의 카페들을 정리한 더미 내용입니다.`,
-      place_id: key,
-    },
-    {
-      post_id: key + '-3',
-      post_title: `${capitalize(key)} 숨겨진 명소 한곳`,
-      date: '2026-06-21',
-      contents: `${capitalize(key)}의 작은 명소를 소개하는 더미 글입니다.`,
-      place_id: key,
-    },
-  ]
-  dummyStore[key] = arr
-  return arr
-}
+// function makeDummyPostsFor(key: string) {
+//   if (dummyStore[key]) return dummyStore[key]
 
-function openPost(p: Post) {
-  // 상세 패널을 부모(App.vue)로 위임
-  emit('open-post', p)
+//   const arr: Post[] = [
+//     {
+//       post_id: key + '-1',
+//       post_title: `${capitalize(key)}의 첫번째 추천 장소`,
+//       date: '2026-07-14',
+//       contents: `${capitalize(key)} 지역에 대해 작성된 더미 글 내용입니다. 상세 설명 A.`,
+//       place_id: key,
+//     },
+//     {
+//       post_id: key + '-2',
+//       post_title: `${capitalize(key)}에서 가볼만한 카페 리스트`,
+//       date: '2026-07-10',
+//       contents: `${capitalize(key)} 지역의 카페들을 정리한 더미 내용입니다.`,
+//       place_id: key,
+//     },
+//     {
+//       post_id: key + '-3',
+//       post_title: `${capitalize(key)} 숨겨진 명소 한곳`,
+//       date: '2026-06-21',
+//       contents: `${capitalize(key)}의 작은 명소를 소개하는 더미 글입니다.`,
+//       place_id: key,
+//     },
+//   ]
+//   dummyStore[key] = arr
+//   return arr
+// }
+
+// function openPost(p: Post) {
+//   // 상세 패널을 부모(App.vue)로 위임
+//   emit('open-post', p)
+// }
+async function openPost(p: Post) {
+  try {
+    const id = Number(p.post_id)
+    const detail = await fetchPostById(id)
+    const payload = {
+      post_id: String(detail.id),
+      post_title: detail.title || detail.post_title || '',
+      date: new Date(detail.created_at).toISOString().slice(0, 10),
+      contents: detail.content ?? detail.post_contents ?? '',
+      place_id: detail.place_id ?? p.place_id,
+    }
+    emit('open-post', payload)
+  } catch (err) {
+    console.error('openPost error', err)
+    // fallback: emit list item without contents
+    emit('open-post', p)
+  }
 }
 
 function truncate(s: string, len = 60) {
@@ -294,13 +370,104 @@ function scrollActiveIntoView() {
 }
 
 function onCreateClick() {
-  // alert('글 작성 기능은 다음 단계에서 구현합니다.')
   emit('open-create')
 }
 
 const regionTitle = computed(() => {
-  return (selected && selected.name) || (q.value && q.value) || '선택된 지역'
+  return (selected && selected.value?.name ) || (q.value && q.value) || '선택된 지역'
 })
+
+// async function onEdit(p: Post) {
+//   const pwd = prompt('수정하려면 비밀번호를 입력하세요.')
+//   if (pwd == null) return
+
+//   const newTitle = prompt('새 제목을 입력하세요', p.post_title)
+//   if (newTitle == null) return
+
+//   const newContent = prompt('새 내용을 입력하세요', p.contents ?? '')
+//   if (newContent == null) return
+
+//   try {
+//     await updatePost(Number(p.post_id), {
+//       post_title: newTitle,
+//       post_contents: newContent,
+//       post_pwd: pwd,
+//     })
+
+//     // 갱신: 선택된 장소가 있으면 장소별 재조회, 아니면 키워드 검색 재실행
+//     if (selected?.value?.id) {
+//       await store.selectPlace(selected.value.id)
+//     } else {
+//       await store.search(q.value)
+//     }
+//   } catch (err: any) {
+//     if (err?.status === 403) {
+//       alert('비밀번호가 일치하지 않습니다.')
+//     } else {
+//       console.error('update failed', err)
+//       alert('수정에 실패했습니다.')
+//     }
+//   }
+// }
+function onEdit(p: Post) {
+  emit('request-edit', p)
+}
+
+// async function onModalSave(payload: { post_id: string; post_title: string; post_contents: string; post_pwd: string }) {
+//   try {
+//     await updatePost(Number(payload.post_id), {
+//       post_title: payload.post_title,
+//       post_contents: payload.post_contents,
+//       post_pwd: payload.post_pwd,
+//     })
+//     // 갱신
+//     if (selected?.value?.id) {
+//       await store.selectPlace(selected.value.id)
+//     } else {
+//       await store.search(q.value)
+//     }
+//     alert('수정되었습니다.')
+//     showEditModal.value = false
+//     editingPost.value = null
+//   } catch (err: any) {
+//     if (err?.status === 403) {
+//       alert('비밀번호가 일치하지 않습니다.')
+//     } else {
+//       console.error(err)
+//       alert('수정에 실패했습니다.')
+//     }
+//   }
+// }
+
+// function onModalClose() {
+//   showEditModal.value = false
+//   editingPost.value = null
+// }
+
+
+async function onDelete(p: Post) {
+  const pwd = prompt('삭제하려면 비밀번호를 입력하세요.')
+  if (pwd == null) return
+  if (!confirm('정말 삭제하시겠습니까?')) return
+
+  try {
+    await deletePost(Number(p.post_id), pwd)
+
+    if (selected?.value?.id) {
+      await store.selectPlace(selected.value.id)
+    } else {
+      await store.search(q.value)
+    }
+  } catch (err: any) {
+    if (err?.status === 403) {
+      alert('비밀번호가 일치하지 않습니다.')
+    } else {
+      console.error('delete failed', err)
+      alert('삭제에 실패했습니다.')
+    }
+  }
+}
+
 </script>
 
 <style scoped>
@@ -722,4 +889,32 @@ const regionTitle = computed(() => {
 }
 .chat-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
 
+
+/* 편집, 삭제 아이콘 */
+.actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 8px;
+}
+.icon-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: transform 0.08s ease, opacity 0.12s ease, filter 0.12s ease;
+  filter: grayscale(100%);
+  opacity: 0.85;
+}
+.icon-btn:hover {
+  filter: grayscale(0%);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.icon-btn svg { display:block; }
+.icon-btn.delete:hover svg { /* optional: red on hover */ fill: #dc2626; }
 </style>

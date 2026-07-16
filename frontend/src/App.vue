@@ -8,6 +8,13 @@ import ChatPanel from './components/ChatPanel.vue'
 const isChatOpen = ref(false)
 function openChat() { isChatOpen.value = true }
 function closeChat() { isChatOpen.value = false }
+// post 관련
+import EditPostModal from './components/EditPostModal.vue'
+import CreatePostModal from './components/CreatePostModal.vue'
+import { updatePost, createPost, fetchPostById } from './services/api' // fetchPostById for edit
+
+import { onMounted } from 'vue'
+// import { fetchAllPlaces } from './services/api'
 
 interface Post {
   post_id: string
@@ -28,11 +35,22 @@ const writeForm = ref({
   password: ''
 })
 
+// onMounted(async () => {
+//   try {
+//     const all = await fetchAllPlaces()
+//     store.places = all
+//     console.log('all places loaded', all)
+//   } catch (e) {
+//     console.error('all places load failed', e)
+//   }
+// })
+
 // 게시글 상세 열기
 function openPost(p: Post) {
   isWriting.value = false // 글쓰기 창은 닫아줌
   activePost.value = p
 }
+
 function closeDetail() {
   activePost.value = null
 }
@@ -49,16 +67,137 @@ function closeWrite() {
 }
 
 // 🌟 저장하기 버튼 클릭 시 동작 (지금은 테스트용 로직)
-function handleSave() {
-  alert(`저장되었습니다!\n장소: ${store.selected?.name || '선택 없음'}\n제목: ${writeForm.value.title}`)
-  isWriting.value = false
+// function handleSave() {
+//   alert(`저장되었습니다!\n장소: ${store.selected?.name || '선택 없음'}\n제목: ${writeForm.value.title}`)
+//   isWriting.value = false
+// }
+async function handleSave() {
+  const payload = {
+    post_title: writeForm.value.title,
+    post_contents: writeForm.value.contents,
+    post_pwd: writeForm.value.password,
+    place_id: store.selected?.id ?? null
+  }
+
+  try {
+    const res = await fetch('http://localhost:8000/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (res.status === 201) {
+      const data = await res.json()
+      isWriting.value = false
+      alert('저장되었습니다.')
+      // 필요하면 반환된 data를 사용해 UI 갱신 (예: 새로운 post id)
+      console.log('created post:', data)
+      // 저장 후 현재 선택된 장소 기준으로 게시물 목록을 갱신합니다.
+      try {
+        if (store.selected) {
+          await store.selectPlace(store.selected)
+        } else {
+          // 선택된 장소가 없으면 현재 검색어로 재검색하여 목록 갱신
+          await store.search()
+        }
+      } catch (err) {
+        console.error('refresh posts error', err)
+      }
+    } else if (res.status === 422) {
+      const err = await res.json()
+      console.error(err)
+      alert('입력값 오류: ' + JSON.stringify(err.errors))
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert(err.detail || '저장에 실패했습니다.')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('서버 요청 중 오류가 발생했습니다.')
+  }
 }
+
+const showEditModal = ref(false)
+const editingPost = ref(null as null | { post_id:string; post_title:string; contents:string; place_id?:string })
+const showCreateModal = ref(false)
+
+async function openEdit(post) {
+  try {
+    const id = Number(post.post_id ?? post.id)
+    const detail = await fetchPostById(id)
+    editingPost.value = {
+      post_id: String(detail.id),
+      post_title: detail.title || detail.post_title || '',
+      contents: detail.content ?? detail.post_contents ?? '',
+      place_id: detail.place_id ?? (store.selected?.id ?? undefined),
+    }
+    showEditModal.value = true
+  } catch (err) {
+    console.error('failed to load post detail for edit', err)
+    alert('게시글 내용을 불러오지 못했습니다.')
+  }
+}
+
+function onEditClose() {
+  showEditModal.value = false
+  editingPost.value = null
+}
+
+async function onEditSave(payload) {
+  try {
+    await updatePost(Number(payload.post_id), {
+      post_title: payload.post_title,
+      post_contents: payload.post_contents,
+      post_pwd: payload.post_pwd,
+    })
+    // 갱신
+    if (store.selected) await store.selectPlace(store.selected)
+    else await store.search()
+    alert('수정되었습니다.')
+    onEditClose()
+  } catch (e: any) {
+    if (e?.status === 403) alert('비밀번호가 일치하지 않습니다.')
+    else { console.error(e); alert('수정에 실패했습니다.') }
+  }
+}
+
+function openCreateModal() {
+  showCreateModal.value = true
+}
+function onCreateClose() { showCreateModal.value = false }
+
+async function onCreateSave(payload) {
+  try {
+    await createPost({
+      post_title: payload.post_title,
+      post_contents: payload.post_contents,
+      post_pwd: payload.post_pwd,
+      place_id: payload.place_id ?? (store.selected?.id ?? null),
+    })
+    if (store.selected) await store.selectPlace(store.selected)
+    else await store.search()
+    alert('게시글이 등록되었습니다.')
+    onCreateClose()
+  } catch (e: any) {
+    console.error(e)
+    alert('등록에 실패했습니다.')
+  }
+}
+
 </script>
 
 <template>
   <div class="app-layout">
     <aside class="left">
       <SearchPanel @open-post="openPost" @open-create="openCreate" @open-chat="openChat" />
+      <SearchPanel @open-post="openPost" @open-create="openCreate" @request-edit="openEdit" />
+
+      <!-- <SearchPanel @open-post="openPost" @open-create="openCreateModal" @request-edit="openEdit" /> -->
+
+      <teleport to="body">
+        <EditPostModal v-if="showEditModal" :show="showEditModal" :post="editingPost" @close="onEditClose" @save="onEditSave" />
+        <CreatePostModal v-if="showCreateModal" :show="showCreateModal" :place_id="store.selected?.id ?? null" @close="onCreateClose" @save="onCreateSave" />
+      </teleport>
     </aside>
 
     <main class="right">
