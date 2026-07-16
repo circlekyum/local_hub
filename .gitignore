@@ -112,3 +112,7 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# for frontend build
+!package.json
+!package-lock.json
