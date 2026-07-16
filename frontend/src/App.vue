@@ -184,7 +184,7 @@ async function onCreateSave(payload) {
 <template>
   <div class="app-layout">
     <aside class="left">
-      <SearchPanel @open-post="openPost" @open-create="openCreate" />
+      <SearchPanel @open-post="openPost" @open-create="openCreate" @request-edit="openEdit" />
 
       <!-- <SearchPanel @open-post="openPost" @open-create="openCreateModal" @request-edit="openEdit" /> -->
 
