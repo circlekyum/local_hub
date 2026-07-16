@@ -60,10 +60,11 @@ async function send() {
 <style scoped>
 .chat-panel {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  left: 12px; /* 또는 left: 12px — 레이아웃에 맞게 선택 */
+  bottom: 12px;            /* 하단 고정 */
   width: 360px;
-  height: 560px;
+  height: 540px;           /* ↑ 여기서 높이 조절 (예: 640px) */
+  max-height: calc(100vh - 24px); /* 화면을 넘지 않도록 */
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 12px 40px rgba(16, 32, 56, 0.25);
