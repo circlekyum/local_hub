@@ -5,9 +5,6 @@ import MapView from './components/MapView.vue'
 import { usePlaces } from './stores/usePlaces' // 🌟 장소 데이터를 연동하기 위해 store 가져옴
 import ChatPanel from './components/ChatPanel.vue'
 
-const isChatOpen = ref(false)
-function openChat() { isChatOpen.value = true }
-function closeChat() { isChatOpen.value = false }
 // post 관련
 import EditPostModal from './components/EditPostModal.vue'
 import CreatePostModal from './components/CreatePostModal.vue'
@@ -24,6 +21,7 @@ interface Post {
   place_id?: string
 }
 
+const API_BASE = (import.meta.env.VITE_API_BASE as string) || ''
 const store = usePlaces() // 🌟 선택된 장소(selected)를 가져오기 위한 스토어 연결
 const activePost = ref<Post | null>(null)
 const isWriting = ref(false) // 🌟 글쓰기 창 띄우기용 상태값
@@ -34,6 +32,10 @@ const writeForm = ref({
   contents: '',
   password: ''
 })
+const isChatOpen = ref(false)
+
+function openChat() { isChatOpen.value = true }
+function closeChat() { isChatOpen.value = false }
 
 // onMounted(async () => {
 //   try {
@@ -80,7 +82,8 @@ async function handleSave() {
   }
 
   try {
-    const res = await fetch('http://localhost:8000/api/posts', {
+    const url = `${API_BASE}/api/posts`
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
