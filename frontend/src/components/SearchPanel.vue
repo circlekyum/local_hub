@@ -349,7 +349,11 @@ function onKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     if (activeIndex.value >= 0 && activeIndex.value < filteredSuggestions.value.length) {
-      chooseSuggestion(filteredSuggestions.value[activeIndex.value])
+      const target = filteredSuggestions.value[activeIndex.value]
+      if(target){
+
+        chooseSuggestion(target)
+      }
     } else {
       doSearch()
     }
@@ -374,7 +378,7 @@ function onCreateClick() {
 }
 
 const regionTitle = computed(() => {
-  return (selected && selected.value?.name ) || (q.value && q.value) || '선택된 지역'
+  return (selected && selected.name ) || (q.value && q.value) || '선택된 지역'
 })
 
 // async function onEdit(p: Post) {
@@ -453,8 +457,8 @@ async function onDelete(p: Post) {
   try {
     await deletePost(Number(p.post_id), pwd)
 
-    if (selected?.value?.id) {
-      await store.selectPlace(selected.value.id)
+    if (selected) {
+      await store.selectPlace(selected)
     } else {
       await store.search(q.value)
     }

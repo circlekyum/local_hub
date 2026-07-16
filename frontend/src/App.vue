@@ -121,7 +121,7 @@ const showEditModal = ref(false)
 const editingPost = ref(null as null | { post_id:string; post_title:string; contents:string; place_id?:string })
 const showCreateModal = ref(false)
 
-async function openEdit(post) {
+async function openEdit(post: any) {
   try {
     const id = Number(post.post_id ?? post.id)
     const detail = await fetchPostById(id)
@@ -143,7 +143,7 @@ function onEditClose() {
   editingPost.value = null
 }
 
-async function onEditSave(payload) {
+async function onEditSave(payload: any) {
   try {
     await updatePost(Number(payload.post_id), {
       post_title: payload.post_title,
@@ -166,7 +166,7 @@ function openCreateModal() {
 }
 function onCreateClose() { showCreateModal.value = false }
 
-async function onCreateSave(payload) {
+async function onCreateSave(payload: any) {
   try {
     await createPost({
       post_title: payload.post_title,
