@@ -3,6 +3,11 @@ import { ref } from 'vue'
 import SearchPanel from './components/SearchPanel.vue'
 import MapView from './components/MapView.vue'
 import { usePlaces } from './stores/usePlaces' // 🌟 장소 데이터를 연동하기 위해 store 가져옴
+import ChatPanel from './components/ChatPanel.vue'
+
+const isChatOpen = ref(false)
+function openChat() { isChatOpen.value = true }
+function closeChat() { isChatOpen.value = false }
 // post 관련
 import EditPostModal from './components/EditPostModal.vue'
 import CreatePostModal from './components/CreatePostModal.vue'
@@ -184,6 +189,7 @@ async function onCreateSave(payload) {
 <template>
   <div class="app-layout">
     <aside class="left">
+      <SearchPanel @open-post="openPost" @open-create="openCreate" @open-chat="openChat" />
       <SearchPanel @open-post="openPost" @open-create="openCreate" @request-edit="openEdit" />
 
       <!-- <SearchPanel @open-post="openPost" @open-create="openCreateModal" @request-edit="openEdit" /> -->
@@ -204,6 +210,10 @@ async function onCreateSave(payload) {
           <div class="date">{{ activePost.date }}</div>
           <div class="body">{{ activePost.contents }}</div>
         </section>
+      </transition>
+
+      <transition name="slide">
+        <ChatPanel v-if="isChatOpen" @close="closeChat" />
       </transition>
 
       <transition name="slide">

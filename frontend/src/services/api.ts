@@ -119,6 +119,17 @@ export async function updatePost(postId: number, data: { post_title: string; pos
   return await res.json()
 }
 
+export async function postChat(question: string): Promise<{ answer: string }> {
+  const API_BASE = 'http://localhost:8000'
+  const url = `${API_BASE}/api/chat`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  })
+  if (!res.ok) throw new Error(`API error ${res.status}`)
+  return await res.json()
+}
 export async function deletePost(postId: number, post_pwd: string) {
   const url = `${API_BASE}/api/posts/${postId}`
   const res = await fetch(url, {

@@ -30,6 +30,7 @@
           </div>
 
           <button @click="doSearch" :disabled="loading">검색</button>
+          <button class="chat-toggle" @click="$emit('open-chat')" aria-label="챗봇 열기">챗봇</button>
         </div>
       </div>
 
@@ -136,6 +137,8 @@ interface Post {
 
 const emit = defineEmits<{
   (e: 'open-post', post: Post): void
+  (e: 'open-create'): void
+  (e: 'open-chat'): void
   (e: 'open-create'): void // 글쓰기 창 열어달라는 신호
   // (e: 'edit-post', post: Post): void // 글 편집
   (e: 'request-edit', post: Post): void // 글 편집
@@ -875,6 +878,17 @@ async function onDelete(p: Post) {
     width: 100%;
   }
 }
+.chat-toggle {
+  margin-left: 8px;
+  background: #06b6d4;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.chat-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
+
 
 /* 편집, 삭제 아이콘 */
 .actions {
