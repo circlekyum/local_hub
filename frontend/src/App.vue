@@ -189,10 +189,9 @@ async function onCreateSave(payload) {
 <template>
   <div class="app-layout">
     <aside class="left">
-      <SearchPanel @open-post="openPost" @open-create="openCreate" @open-chat="openChat" />
-      <SearchPanel @open-post="openPost" @open-create="openCreate" @request-edit="openEdit" />
+      <SearchPanel @open-post="openPost" @open-create="openCreate" @open-chat="openChat" @request-edit="openEdit" />
 
-      <!-- <SearchPanel @open-post="openPost" @open-create="openCreateModal" @request-edit="openEdit" /> -->
+      <!-- <SearchPanel @open-post="openPost" @open-create="openCreateModal" @open-chat="openChat" @request-edit="openEdit" /> -->
 
       <teleport to="body">
         <EditPostModal v-if="showEditModal" :show="showEditModal" :post="editingPost" @close="onEditClose" @save="onEditSave" />
