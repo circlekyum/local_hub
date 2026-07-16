@@ -41,3 +41,15 @@ export async function fetchPlaces(query: string): Promise<Place[]> {
     { id: '3', name: `${query} 카페 C`, addr: '서울시 강남구', lat: 37.4979, lng: 127.0276 },
   ]
 }
+
+export async function postChat(question: string): Promise<{ answer: string }> {
+  const API_BASE = 'http://localhost:8000'
+  const url = `${API_BASE}/api/chat`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  })
+  if (!res.ok) throw new Error(`API error ${res.status}`)
+  return await res.json()
+}
