@@ -30,6 +30,7 @@
           </div>
 
           <button @click="doSearch" :disabled="loading">검색</button>
+          <button class="chat-toggle" @click="$emit('open-chat')" aria-label="챗봇 열기">챗봇</button>
         </div>
       </div>
 
@@ -115,7 +116,8 @@ interface Post {
 
 const emit = defineEmits<{
   (e: 'open-post', post: Post): void
-  (e: 'open-create'): void // 글쓰기 창 열어달라는 신호 추가
+  (e: 'open-create'): void
+  (e: 'open-chat'): void
 }>()
 
 const store = usePlaces()
@@ -709,4 +711,15 @@ const regionTitle = computed(() => {
     width: 100%;
   }
 }
+.chat-toggle {
+  margin-left: 8px;
+  background: #06b6d4;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.chat-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
+
 </style>
