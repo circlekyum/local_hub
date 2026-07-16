@@ -106,19 +106,106 @@ async function onSave() {
 .modal {
   width: 100%;
   max-width: 520px;
-  background: white;
-  border-radius: 8px;
-  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
   box-sizing: border-box;
-  box-shadow: 0 12px 40px rgba(2, 6, 23, 0.4);
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.32);
+  color: #102a43;
 }
-.modal-title { margin: 0 0 12px 0; font-weight:700; }
-.field { margin-bottom: 10px; display:flex; flex-direction:column; gap:6px; }
-.label { font-size:13px; color:#425 ; }
-input, textarea { padding:10px; border:1px solid #e3e8ef; border-radius:6px; font-size:14px; }
-.actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-.btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
-.btn.secondary { background:#f0f4f8; color:#102a43; }
-.btn.primary { background:#3b82f6; color:white; font-weight:700; }
-.error { margin-top:8px; color:#b91c1c; font-size:13px; }
+
+/* 제목 */
+.modal-title {
+  margin: 0 0 14px 0;
+  font-weight: 800;
+  font-size: 18px;
+  color: #102a43;
+}
+/* 필드 레이아웃 */
+.field {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 13px;
+  color: #616e7c;
+  font-weight: 600;
+}
+/* 입력창 공통 스타일 (글쓰기 폼과 통일) */
+/* input, textarea { padding:10px; border:1px solid #e3e8ef; border-radius:6px; font-size:14px; } */
+input[type="text"],
+input[type="password"],
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #102a43;
+  background-color: #fff;
+  transition: all 0.16s ease;
+  box-sizing: border-box;
+  resize: vertical;
+}
+/* 포커스 효과 */
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.10);
+}
+/* 플레이스홀더 스타일을 글쓰기 폼과 통일 */
+input::placeholder,
+textarea::placeholder {
+  font-family: 'Nanum Gothic', sans-serif;
+  color: #788fa7;
+  font-size: 13px;
+  font-weight: 400;
+}
+/* 액션 버튼 */
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.btn {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+.btn.secondary {
+  background: #f0f4f8;
+  color: #102a43;
+}
+.btn.primary {
+  background: #3b82f6;
+  color: #ffffff;
+}
+.btn.primary:hover {
+  background: #2563eb;
+}
+
+/* 에러 메세지 강조 */
+.error {
+  margin-top: 10px;
+  color: #b91c1c;
+  font-size: 13px;
+  background: rgba(185, 28, 28, 0.06);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+/* 반응형 여백 보정 */
+@media (max-width: 520px) {
+  .modal {
+    margin: 16px;
+  }
+}
 </style>
